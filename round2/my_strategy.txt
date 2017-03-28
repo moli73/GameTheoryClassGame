@@ -1,0 +1,2 @@
+The second strategy is to use the fictitious game:
+To use fictitious game algorithm of each other five agents to get the predicted contribution they will do next time, and I choose the best respond of this predicted total contribution.
