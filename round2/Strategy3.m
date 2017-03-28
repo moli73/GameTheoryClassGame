@@ -1,76 +1,70 @@
-function [action] = Strategy3(t, state)
-% -----------------------------------------------------------------------
-% Course: ECEN 689 (Shakkottai)
-% Function: class_game
-% TA: Vinod Ramaswamy
-%
-% This is a simple function template into which you may write the 
-% code to implement your strategy. Remember that you may use persistent
-% variables as well as some simple file I/O. In the latter case, please use
-% a file called StateXX.
-%
-% NOTE: Remember to rename relabel all XX's as the 2-digit number assigned
-% to you.
-%
-% INPUTS: 
-% t - The number of the current stage game being played, starting from 1. 
-%     As T = 300, this value will be an integer between 1 and 300.
-% state - A 6x(t-1) (6 rows, (t-1) columns) state matrix, each column of 
-%         which is the vector (x_1^s, x_2^s, ..., x_N^s), for 1 <= s < t.
-%         You will be agent 1, and the other 5 players will be agents 2 to
-%         6. Note that the associations between the other 5 players and
-%         positions 2 to 6 will be consistent and the actions in a given
-%         row of the state matrix will always be associated with the same
-%         (anonymous) player. For stage t = 1, the state will be a single column
-%         of zeros.
-% OUTPUTS:
-% action - This is an integer from 0 to 20 representing the number of
-%          tokens you wish to contribute for the current stage. This must
-%          be an integer.
-%
-% NOTICE: The routine calling this function will check for:
-% - Runtime: The game will be run on a linux workstation with a quad-core
-%            Intel Xeon CPU @ 3.6 Ghz with 8 Gigs of memory. Your function
-%            must be designed to run in 0.5 seconds or less per call on this
-%            platform.
-% - Correctness: To ensure that output follows the specified format, your
-%                returned action will be rounded to the nearest integer in 
-%                the range 0,...,20.
-% - Do not manipulate any state variables (random number seed) in Matlab.
-%
-% *If there are any problems/questions/suggestions/etc. please email the
-% CA.
-%
-% ------------------------------------------------------------------------
-
-
-% Place code here
-%configure
-N = 6;
-B = 20;
-M = N * B / 4;
-K = N /2;
-T = 300;
-%the candidate action
-%the first stage choose 1
-action_cand = 1;
-if t ~= 1
-    %sum of action of other entrants in last stage
-    x_other_last = sum(state( :, t - 1)) - state(6, t - 1);
-    %the action I could choose
-    x_choice = [0 : 20];
-    x_sum = x_other_last + x_choice;
-    
-    payoff = K .* x_sum ./ N + M .* (x_choice ./ x_sum) + B - x_choice;
-    
-    [payoff_max, indice] = max(payoff);
-    action_cand = x_choice(indice);
+function action = Strategy3(t,state)
+%this function returns the payoff during each stage of the team 03's play
+%written by Sagar Samant and Gordon Chen
+%Takes the number of stages in a round and the state matrix during each
+%stage as input
+    [rows,columns]=size(state);
+    K=3;
+    M=30;
+    past_values=ceil(t/4);
+    next_stage_iteration=columns+1;
+    payoff_pairs=zeros(1,21);
+    if(next_stage_iteration==2)
+        %this is the first time I am contributing
+        %I will contribute the minimum amount so as to gauge the other
+        %players
+        action=0;
+        return;
+        %disp('coming through');
+    else
+        %this time I will contribute an amount that should give me a payoff
+        %greater than the average payoff of all the other players in the first
+        %#past_values iterations
+        state=state(:,[2:columns]);
+        [rows,columns]=size(state);
+        sum_of_contributions=[];
+        sum_of_other_players=[];
+        decider=columns-1;
+        if(columns>=past_values)
+            decider=past_values-1;%needed so that we know what we have to sum
+        end
+        state_calc_mat=state(:,[columns-decider:columns]);%we separated out the matrix we're gonna work on 
+        %state_calc_mat
+        [r,c]=size(state_calc_mat);
+        for(i=1:c)
+            sum_of_contributions=[sum_of_contributions sum(state_calc_mat(:,i))];
+            sum_of_other_players=[sum_of_other_players sum(state_calc_mat([2:r],i))];
+        end
+        %now that we've the sum of contributions for each iteration, we
+        %will build our payoff matrix corresponding to the past available
+        %history
+%         disp('sum of contributions')
+%         sum_of_contributions
+%         disp('sum of all other players')
+%         sum_of_other_players
+        average_sum=sum(sum_of_other_players)/c;
+%         disp('avg sum')
+%         average_sum
+        sum_of_contributions=ones(r,1)*sum_of_contributions;
+        pay_off_matrix=K*(sum_of_contributions./r)+M*(state_calc_mat./sum_of_contributions)+20-state_calc_mat;
+%         disp('payoff of all players')
+%         pay_off_matrix
+        avg_payoff_for_all_players=[0];
+        for(i=2:r)
+            avg_payoff_for_all_players=[avg_payoff_for_all_players;sum(pay_off_matrix(i,:))/c];
+        end
+%         disp('average payoff');
+%         avg_payoff_for_all_players
+        max_payoff=max(avg_payoff_for_all_players);
+        for(i=0:20)
+            my_payoff=(K*(average_sum+i)/r)+M*(i/(average_sum+i))+20-i;
+            payoff_pairs(i+1)=my_payoff;
+            if(my_payoff >= max_payoff)
+                action=i;
+                return;
+            end
+        end
+    end
+    %payoff_pairs
+    action=find((payoff_pairs==max(payoff_pairs)),1)-1;
 end
-
-% In the end, assign your action to the return variable "action"
-action = action_cand;
-
-
-
-
-
